@@ -1,12 +1,8 @@
-//Jacob Martin
-//AVL.h for Homework 2.
-
 #ifndef HOMEWORK2_AVL_TREE_H_
 #define HOMEWORK2_AVL_TREE_H_
 
 #include "dsexceptions.h"
 #include <algorithm>
-#include <vector>
 #include <iostream> 
 
 
@@ -98,24 +94,6 @@ class AvlTree
         return contains( x, root );
     }
 
-
-    /**
-    * Returns acronyms of x in the tree.
-    */
-    std::vector<std::string> find( const Comparable & x ) 
-    {
-        return find( x, root );
-    }
-
-    /**
-    * Returns amount of recursive calls in the tree.
-    */
-    int findCount( const Comparable & x ) 
-    {
-        return findCount( x, root, 0);
-    }
-
-
     /**
      * Test if the tree is logically empty.
      * Return true if empty, false otherwise.
@@ -163,39 +141,10 @@ class AvlTree
     /**
      * Remove x from the tree. Nothing is done if x is not found.
      */
-    int remove( const Comparable & x )
+    void remove( const Comparable & x )
     {
-        int final = 0;
-        return remove( x, root, final );
+        remove( x, root );
     }
-
-    /**
-    * Returns the total number of nodes in the tree.
-    */
-    int getNumberOfNodes() 
-    {
-        return NumberNodes(root);
-    }
-
-    /**
-    * Returns the total depth of the tree.
-    */
-    int getTotalDepth() 
-    {
-        return TotalDepth(root, 0);
-    }
-    
-    std::string getEnzymeAcronym(const Comparable & x)
-    {
-        std::string result;
-        std::vector<std::string> temp = find( x, root );
-        for (size_t i = 0; i < temp.size(); i++) {
-            result += temp[i];
-            result += " ";
-        }
-        return result;
-    }
-
 
   private:
     struct AvlNode
@@ -216,36 +165,6 @@ class AvlTree
 
 
     /**
-    * Internal method to count total Nodes of the tree.
-    * Returns the total as a integer
-    */
-    int NumberNodes(AvlNode * &t) 
-    {
-        if(t == nullptr)
-            return 0;
-        int left = NumberNodes(t->left);
-        int right = NumberNodes(t->right);
- 
-        return 1 + left + right;
-    }
-
-    
-    /**
-    * Internal method to count total depth of the tree.
-    * Returns the depth as a integer
-    */
-    int TotalDepth(AvlNode *&t, int depth) 
-    {
-        if(t == nullptr)
-            return 0;
-	if(t->left == nullptr && t->right == nullptr)
-		return depth + 1;
-        else
-            return depth + TotalDepth(t->left, depth + 1) + TotalDepth(t->right, depth + 1); 
-    }
-
-
-    /**
      * Internal method to insert into a subtree.
      * x is the item to insert.
      * t is the node that roots the subtree.
@@ -259,8 +178,6 @@ class AvlTree
             insert( x, t->left );
         else if( t->element < x )
             insert( x, t->right );
-        else
-            t->element.Merge(x);
         
         balance( t );
     }
@@ -279,8 +196,6 @@ class AvlTree
             insert( std::move( x ), t->left );
         else if( t->element < x )
             insert( std::move( x ), t->right );
-        else
-            t->element.Merge(x);
         
         balance( t );
     }
@@ -291,18 +206,19 @@ class AvlTree
      * t is the node that roots the subtree.
      * Set the new root of the subtree.
      */
-    int remove( const Comparable & x, AvlNode * & t,  int count)
+    void remove( const Comparable & x, AvlNode * & t )
     {
         if( t == nullptr )
-            return count * -1;   // Item not found; do nothing
+            return;   // Item not found; do nothing
+        
         if( x < t->element )
-            return remove( x, t->left, count + 1 );
+            remove( x, t->left );
         else if( t->element < x )
-            return remove( x, t->right, count + 1 );
+            remove( x, t->right );
         else if( t->left != nullptr && t->right != nullptr ) // Two children
         {
-            t->element = findMin( t->right, count )->element;
-            return remove( t->element, t->right, count + 1 );
+            t->element = findMin( t->right )->element;
+            remove( t->element, t->right );
         }
         else
         {
@@ -312,42 +228,42 @@ class AvlTree
         }
         
         balance( t );
-        return count;
     }
     
     static const int ALLOWED_IMBALANCE = 1;
 
-	// Assume t is balanced or within one of being balanced
-	void balance( AvlNode * & t )
-	{
-		if( t == nullptr )
-			return;
-		if( height( t->left ) - height( t->right ) > ALLOWED_IMBALANCE ) {
-			if( height( t->left->left ) >= height( t->left->right ) )
-				rotateWithLeftChild( t );
-			else
-				doubleWithLeftChild( t );
-		} else if( height( t->right ) - height( t->left ) > ALLOWED_IMBALANCE ) {
-			if( height( t->right->right ) >= height( t->right->left ) )
-				rotateWithRightChild( t );
-			else
-				doubleWithRightChild( t );
-		}
-		t->height = max( height( t->left ), height( t->right ) ) + 1;
+    // Assume t is balanced or within one of being balanced
+    void balance( AvlNode * & t )
+    {
+        if( t == nullptr )
+            return;
+        
+        if( height( t->left ) - height( t->right ) > ALLOWED_IMBALANCE ) {
+            if( height( t->left->left ) >= height( t->left->right ) )
+                rotateWithLeftChild( t );
+            else
+                doubleWithLeftChild( t );
+        } else if( height( t->right ) - height( t->left ) > ALLOWED_IMBALANCE ) {
+	  if( height( t->right->right ) >= height( t->right->left ) ) 
+                rotateWithRightChild( t );
+	   else 
+                doubleWithRightChild( t );
 	}
+                
+        t->height = max( height( t->left ), height( t->right ) ) + 1;
+    }
     
     /**
      * Internal method to find the smallest item in a subtree t.
      * Return node containing the smallest item.
      */
-    AvlNode * findMin( AvlNode *t, int& count ) const
+    AvlNode * findMin( AvlNode *t ) const
     {
-        count++;
         if( t == nullptr )
             return nullptr;
         if( t->left == nullptr )
             return t;
-        return findMin( t->left, count );
+        return findMin( t->left );
     }
 
     /**
@@ -360,42 +276,6 @@ class AvlTree
             while( t->right != nullptr )
                 t = t->right;
         return t;
-    }
-
-    /**
-    * Internal method to find the sequence in a subtree t.
-    * Return acronyms of the item as a vector.
-    */
-    std::vector<std::string> find(const Comparable & x, AvlNode *t) 
-    {
-        if(t == nullptr) 
-        {
-            std::vector<std::string> result;
-            result.push_back("Not Found");
-            return result;
-        }
-        else if (x < t->element)
-            return find(x, t->left);
-        else if (t->element < x)
-            return find(x, t->right);
-        else
-            return t->element.getArcos();
-    }
-
-    /**
-    * Internal method to find the amount of recursive calls to find x in a subtree t.
-    * Returns the total as a integer.
-    */
-    int findCount(const Comparable & x, AvlNode *t, int count) 
-    {
-        if(t == nullptr)
-            return count * -1;
-        else if (x < t->element)
-            return findCount(x, t->left, count + 1);
-        else if (t->element < x)
-            return findCount(x, t->right, count + 1);
-        else
-            return count;
     }
 
 
@@ -452,7 +332,7 @@ class AvlTree
         if( t != nullptr )
         {
             printTree( t->left );
-	        std::cout << t->element << std::endl;
+	    std::cout << t->element << std::endl;
             printTree( t->right );
         }
     }
@@ -467,8 +347,7 @@ class AvlTree
         else
             return new AvlNode{ t->element, clone( t->left ), clone( t->right ), t->height };
     }
-    
-    // Avl manipulations
+        // Avl manipulations
     /**
      * Return the height of node t or -1 if nullptr.
      */
